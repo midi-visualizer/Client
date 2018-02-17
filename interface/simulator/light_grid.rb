@@ -29,7 +29,7 @@ module Interface
         @semaphore.synchronize do
           # Transfer the contents of @colors to the buffers
           @columns.each.with_index do |column, i_column|
-            color_index = i_column * @columns.length + @num_rows
+            color_index = (i_column + 1) * @num_rows
             column.each do |light|
               color_index -= 1
               light.color = @colors[color_index]

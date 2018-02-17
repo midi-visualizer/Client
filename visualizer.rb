@@ -5,8 +5,11 @@ require_relative 'layer/palette'
 
 class Visualizer
   def initialize(interface, palette)
-    @layers = Layer::Ctx.new 2, [interface.rows, interface.columns], palette
-    @buffer = Array.new(interface.rows * interface.columns) { ::Color::RGB.new rand, rand, rand, 1.0 }
+    @layers = Layer::Ctx.new 2, rows: interface.rows,
+                                columns: interface.columns,
+                                palette: palette
+    @buffer = Array.new(interface.rows * interface.columns) {
+      Color::RGB.new rand, rand, rand, 1.0 }
     @interface = interface
   end
   

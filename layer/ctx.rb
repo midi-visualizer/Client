@@ -3,10 +3,16 @@ require_relative 'palette'
 
 module Layer
   class Ctx
-    def initialize(num_layers, size, palette)
+    attr_accessor :intensity
+    
+    def initialize(num_layers, rows:, columns:, palette:)
       #palettes = ->(_) { palettes } if Palette === palettes
       
-      @layers = Array.new(num_layers) { |i| Layer.new size, palette }.freeze
+      @layers =
+        Array.new(num_layers) do |i|
+          Layer.new rows: rows, columns: columns, palette: palette
+        end
+      @layers.freeze
     end
     
     def [](index)
@@ -17,11 +23,13 @@ module Layer
       @layers.each &block
     end
     
-    def render(buffer = nil)
+    def render(buffer = nil, intensity: 1.0)
       # Clear the buffer
       buffer.each { |c| c.r = c.g = c.b = 0 } if buffer
       # Render from the bottom up
-      @layers.reduce(buffer) { |background, layer| layer.to_color! background }
+      @layers.reduce(buffer) do |background, layer|
+        layer.to_color! background, intensity: intensity
+      end
     end
   end
 end

@@ -18,6 +18,10 @@ module Layer
       @states[index]
     end
     
+    def num_states
+      @rows * @columns
+    end
+    
     # If a background is supplied the layer will mix its colors with those of the
     # background, based on the intensity of each pixel.
     #

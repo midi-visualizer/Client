@@ -5,11 +5,12 @@ require 'thread/process'
 require_relative 'pixel_strip'
 require_relative 'palette'
 require_relative 'animation'
+require_relative 'midi_router'
 
 C4_OFFSET = 72
 
 PALETTE = Palette.new(Color::RGB.new(0, 0, 0),
-                      Color::RGB.new(0xFF, 0xFF, 0xFF)).to_a(256)
+                      Color::RGB.new(0xFF, 0xFF, 0xFF))
 
 def handle_midi_msg(m, pixels)
   led, val =
@@ -30,6 +31,8 @@ end
 
 state_channel = Thread.channel
 midi_queue    = Queue.new
+
+midi_router = MIDIRouter.new
 
 # random_walk_process =
 #   Thread.process do
@@ -93,11 +96,19 @@ midi_process =
       t = rand * 5
       sleep t
       note = (rand * 10).round
-      midi_queue.push([note, :on])
+      
+      midi_router.push_event({
+        data: [0x90, note, 60],
+        timestamp: Time.now.to_f
+      })
 
       t = rand * 2
       sleep t
-      midi_queue.push([note, :off])
+      
+      midi_router.push_event({
+        data: [0x80, note, 0],
+        timestamp: Time.now.to_f
+      })
     end
   end
 
@@ -105,62 +116,75 @@ animation_process =
   Thread.process do
     puts "Starting animation process"
     animations = Array.new(11) { [] }
-
+    
+    animator = Animator.new(11)
+    animator.handler = Animator::SustainDecay.new
+    
     loop do
       t, state = receive
       
-      until midi_queue.empty?
-        i, s = midi_queue.pop
-        
-        case s
-        when :on
-          animations[i] = [
-            Animation.new(      t, t + 0.2, state[i], 1.0),
-            Animation.new(t + 0.2, t + 2.0, 1, 0.8)
-          ]
-        when :off
-          animations[i] = [
-            Animation.new(      t, t + 2, state[i], 0)
-          ]
-        end
+      midi_router.each_note do |note|
+        animator.hande_note note
       end
       
-      animations.each_with_index do |animation_queue, i|
-        next if animation_queue.empty? || animation_queue.first.active?(t)
-        state[i] = animation_queue.shift.v_end
-      end
+      next_state = animator.next_state state
       
-      next_state =
-        animations.map.with_index do |animation_queue, i|
-          if animation_queue.empty?
-            state[i]
-          else
-            animation_queue.first.value(t)
-          end
-        end
-
       state_channel.send next_state
+      
+    #   until midi_queue.empty?
+    #     i, s = midi_queue.pop
+    #
+    #     case s
+    #     when :on
+    #       animations[i] = [
+    #         Animation.new(      t, t + 0.2, state[i], 1.0),
+    #         Animation.new(t + 0.2, t + 2.0, 1, 0.8)
+    #       ]
+    #     when :off
+    #       animations[i] = [
+    #         Animation.new(      t, t + 2, state[i], 0)
+    #       ]
+    #     end
+    #   end
+    #
+    #   animations.each_with_index do |animation_queue, i|
+    #     next if animation_queue.empty? || animation_queue.first.active?(t)
+    #     state[i] = animation_queue.shift.v_end
+    #   end
+    #
+    #   next_state =
+    #     animations.map.with_index do |animation_queue, i|
+    #       if animation_queue.empty?
+    #         state[i]
+    #       else
+    #         animation_queue.first.value(t)
+    #       end
+    #     end
+    #
+    #   state_channel.send next_state
     end
   end
 
 # Open the port and wait for the device to initialize
 PixelStrip.open_cli do |pixels|
-  pixels.palette = PALETTE
+  layers = Layered.new 2, pixels.count, PALETTE
   
-  t     = Time.now.to_f
-  state = Array.new(11, 0.0)
-  # Request the first frame
-  animation_process.send [t, state]
+  # Setup background
+  layers[0].synthesizer = Layer::Synthesizer::Simple.new
   
+  # Setup foreground
+  layers[1].synthesizer = Layer::Synthesizer::Complex.new
+    
   loop do
-    t     = Time.now.to_f + 1.0 / 60
-    state = state_channel.receive
+    t = Time.now.to_f + 1.0 / 60
     
-    # Request next t
-    animation_process.send [t, state]
+    layers.each do |layer|
+      layer.synthesize! t
+    end
     
-    sleep 0.0005 while t > Time.now.to_f
+    # Wait until it is time to refresh
+    sleep 0.001 while t > Time.now.to_f
     
-    pixels.update! state
+    layers.update!
   end
 end

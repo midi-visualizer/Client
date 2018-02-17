@@ -2,16 +2,20 @@ require 'color'
 require 'serialport'
 require 'highline'
 
-require_relative 'state'
+# TODO: Remove internal buffer from pixel strip.
 
 class PixelStrip
   SERIAL_BAUD = 115200
   NUM_PIXELS  = 11
+  GAMMA       = 2.4
   
-  def initialize(port, palette = [])
+  def initialize(port)
     @buffer  = Array.new(NUM_PIXELS) { Color::RGB.new }
     @port    = port
-    @palette = palette
+  end
+  
+  def count
+    NUM_PIXELS
   end
   
   def ready?
@@ -23,7 +27,7 @@ class PixelStrip
   def update!(buffer = nil)
     NUM_PIXELS.times { |i| self[i] = buffer[i] } if buffer
     @port.write('W' +
-      @buffer.flat_map { |pixel| transform_pixel(pixel) }.pack('C*'))
+      @buffer.flat_map { |pixel| self.class.transform_pixel(pixel) }.pack('C*'))
   end
   
   def clear!
@@ -38,30 +42,13 @@ class PixelStrip
       yield i
     end
   end
-  
-  def palette=(palette)
-    @palette = palette
-  end
-  
+    
   def [](pixel_index)
     @buffer[pixel_index]
   end
   
   def []=(pixel_index, color)
     case color
-    when State
-      @buffer[pixel_index] = color.to_color
-      
-    when Integer
-      @buffer[pixel_index] = @palette[color]
-    when Float
-      if color > 1.0
-        color = 1.0
-      elsif color < 0
-        color = 0.0
-      end
-      
-      @buffer[pixel_index] = @palette[(color * (@palette.length - 1)).round]
     when Color::RGB
       @buffer[pixel_index] = color
     else raise ArgumentError
@@ -93,6 +80,7 @@ class PixelStrip
     end
   end
   
+  # TODO: Look for a simulator and use that if no pixel strip is available.
   def self.open_cli(ports_dir = '/dev/tty.*', &block)
     ports = Dir[ports_dir].reject { |port| port.include? 'Bluetooth' }
     port_path =
@@ -115,18 +103,26 @@ class PixelStrip
   
   private
   
-  def gamma_correct(value)
+  def self.gamma_correct(value)
     case value
     when Complex then 0
     else
-      value**2.4
+      value**GAMMA
     end
   end
   
   # Crude alg. taken from
   # https://stackoverflow.com/questions/40312216/converting-rgb-to-rgbw
-  def transform_pixel(pixel)
+  #
+  # pixel.to_a must produce an array of three values between 0 and 1
+  # representing the red, green and blue color channels.
+  #
+  # Returns an array of four integer color values (r,g,b,w) between 0 and 255.
+  #
+  # TODO: Implement this as using fixed point math.
+  def self.transform_pixel(pixel)
     c = pixel.to_a
+    raise ArgumentError, 'Invalid pixel format' unless c.length == 3
     
     # DEBUG: Return unaltered array
     #return c.push(0).map{ |v| (v*255).round }
@@ -134,13 +130,18 @@ class PixelStrip
     tm = c.max
     return [0,0,0,0] if tm == 0
     
+    # Normalize components
     multiplier = 1.0 / tm
     h = c.map { |v| v * multiplier }
-        
-    luminance = ((h.max + h.min) / 2 - 0.5) * 2 * tm
     
-    c.push(luminance)
+    whiteness = [((1 + h.min) - 1) * tm, 1].min
+    #              ^- h.max == 1
+    
+    # Remove whiteness from original color channels
+    c.map! { |v| [v - whiteness, 0].max }
+    
+    c.push whiteness
+    # Gamma correct everything, scale and round
     c.map! { |v| (gamma_correct(v)*255).round }
-    c
   end
 end

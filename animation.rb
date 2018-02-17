@@ -9,9 +9,15 @@ class Animation
     @v_end   = v_end.to_f
   end
   
-  def active?(t)
+  def started?(t)
+    t <= @t_start
+  end
+  
+  def ended?(t)
     t <= @t_end
   end
+  
+  alias active? ended?
   
   def value(t)
     r = (t - @t_start) / (@t_end - @t_start)

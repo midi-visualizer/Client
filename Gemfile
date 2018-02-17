@@ -10,3 +10,5 @@ gem "serialport"
 gem "color"
 gem "highline"
 gem "thread"
+
+gem "ruby2d"

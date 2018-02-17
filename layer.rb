@@ -1,3 +1,5 @@
+require_relative 'state'
+
 class Layer
   def initialize(size, palette)
     @rows, @columns =

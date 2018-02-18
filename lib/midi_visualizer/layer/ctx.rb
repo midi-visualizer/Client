@@ -1,34 +1,36 @@
-require_relative 'layer'
-require_relative 'palette'
+require 'midi_visualizer/layer/layer'
+require 'midi_visualizer/layer/palette'
 
-module Layer
-  class Ctx
-    attr_accessor :intensity
-    
-    def initialize(num_layers, rows:, columns:, palettes:)
-      #palettes = ->(_) { palettes } if Palette === palettes
+module MIDIVisualizer
+  module Layer
+    class Ctx
+      attr_accessor :intensity
       
-      @layers =
-        Array.new(num_layers) do |i|
-          Layer.new rows: rows, columns: columns, palette: palettes[i]
+      def initialize(num_layers, rows:, columns:, palettes:)
+        #palettes = ->(_) { palettes } if Palette === palettes
+        
+        @layers =
+          Array.new(num_layers) do |i|
+            Layer.new rows: rows, columns: columns, palette: palettes[i]
+          end
+        @layers.freeze
+      end
+      
+      def [](index)
+        @layers[index]
+      end
+      
+      def each(&block)
+        @layers.each(&block)
+      end
+      
+      def render(buffer = nil, intensity: 1.0)
+        # Clear the buffer
+        buffer.each { |c| c.r = c.g = c.b = 0 } if buffer
+        # Render from the bottom up
+        @layers.reduce(buffer) do |background, layer|
+          layer.to_color! background, intensity: intensity
         end
-      @layers.freeze
-    end
-    
-    def [](index)
-      @layers[index]
-    end
-    
-    def each(&block)
-      @layers.each &block
-    end
-    
-    def render(buffer = nil, intensity: 1.0)
-      # Clear the buffer
-      buffer.each { |c| c.r = c.g = c.b = 0 } if buffer
-      # Render from the bottom up
-      @layers.reduce(buffer) do |background, layer|
-        layer.to_color! background, intensity: intensity
       end
     end
   end

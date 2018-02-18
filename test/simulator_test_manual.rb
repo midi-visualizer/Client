@@ -1,8 +1,10 @@
-require_relative 'Visualizer'
-require_relative 'interface/simulator'
+require 'test_helper'
+require 'midi_visualizer/Visualizer'
+require 'midi_visualizer/interface/simulator'
+require 'midi_visualizer/layer/palette'
+require 'midi_visualizer/visualizer/background'
 
-require_relative 'layer/palette'
-require_relative 'visualizer/background'
+include MIDIVisualizer
 
 PALETTE_BG = Layer::Palette.new(Color::RGB.new(0x40, 0xFF, 0x60),
                                 Color::RGB.new(0xFF, 0x00, 0x00))

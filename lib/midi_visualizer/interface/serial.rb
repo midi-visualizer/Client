@@ -1,5 +1,7 @@
-module Interface
-  class Serial
-    
+module MIDIVisualizer
+  module Interface
+    class Serial
+      
+    end
   end
 end

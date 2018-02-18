@@ -35,8 +35,9 @@ Gem::Specification.new do |spec|
   
   spec.add_dependency "color",      "~> 1.8"
   spec.add_dependency "highline",   "~> 1.7"
-  spec.add_dependency "ruby2d",     "~> 0.5"
   spec.add_dependency "serialport", "~> 1.3"
   spec.add_dependency "thread",     "~> 0.2"
   spec.add_dependency "unimidi",    "~> 0.4"
+  
+  spec.add_dependency "midi_visualizer-interface-simulator", "~> 0.1"
 end

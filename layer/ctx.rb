@@ -5,12 +5,12 @@ module Layer
   class Ctx
     attr_accessor :intensity
     
-    def initialize(num_layers, rows:, columns:, palette:)
+    def initialize(num_layers, rows:, columns:, palettes:)
       #palettes = ->(_) { palettes } if Palette === palettes
       
       @layers =
         Array.new(num_layers) do |i|
-          Layer.new rows: rows, columns: columns, palette: palette
+          Layer.new rows: rows, columns: columns, palette: palettes[i]
         end
       @layers.freeze
     end

@@ -22,6 +22,10 @@ module Layer
       @states.each(&block)
     end
     
+    def states
+      @states
+    end
+    
     # If a background is supplied the layer will mix its colors with those of
     # the background, based on the intensity of each pixel.
     #

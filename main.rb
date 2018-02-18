@@ -4,7 +4,6 @@ require 'thread/process'
 
 require_relative 'pixel_strip'
 require_relative 'palette'
-require_relative 'animation'
 require_relative 'midi_router'
 
 C4_OFFSET = 72
@@ -26,6 +25,39 @@ def handle_midi_msg(m, pixels)
     $stdout.puts led, val
     color_index = m[2] / 11
     pixels[led] = val == 1 ? PALETTE[color_index] : COLOR_OFF
+  end
+end
+
+class Animation
+  attr_reader :v_end
+
+  def initialize(t_start, t_end, v_start, v_end)
+    @t_start = t_start
+    @t_end   = t_end
+
+    @v_start = v_start.to_f
+    @v_end   = v_end.to_f
+  end
+
+  def started?(t)
+    t <= @t_start
+  end
+
+  def ended?(t)
+    t <= @t_end
+  end
+
+  alias active? ended?
+
+  def value(t)
+    r = (t - @t_start) / (@t_end - @t_start)
+    @v_start + r * (@v_end - @v_start)
+  end
+
+  def interpolation(from, to, steps)
+    delta = to - from
+    time_scaling = delta / (steps - 1)
+    ->(t) { from + time_scaling * t }
   end
 end
 

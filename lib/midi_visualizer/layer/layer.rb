@@ -20,8 +20,8 @@ module MIDIVisualizer
       def initialize(context, palette:)
         @context = context
         
-        @row_factor = height / rows
-        @col_factor = width / columns
+        @row_factor = height / (rows - 1)
+        @col_factor = width / (columns - 1)
         @states  = Array.new(num_states) { State.new }
         @palette = palette
         @intensity = 1.0

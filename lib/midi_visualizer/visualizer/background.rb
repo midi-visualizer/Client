@@ -8,8 +8,8 @@ module MIDIVisualizer
     # it. Calling #update! will write to the underlying layer.
     class Background
       attr_accessor :amplitude, :f
-      def initialize(layer, mean: 0.5, amplitude: 0.3, f: 0.2, noise: 1.0,
-                     spread: 0.7)
+      def initialize(layer, mean: 0.5, amplitude: 0, f: 0.2, noise: 0,
+                     spread: 1.0)
 
         @amplitude = amplitude
         @f = f
@@ -19,6 +19,7 @@ module MIDIVisualizer
           Array.new(layer.num_states) do |state|
             phase   = rand * noise * 2 * Math::PI
             palette = mean + (layer.position(state)[1] - 0.5) * spread
+            p layer.position(state)[1]
             [palette, phase]
           end
 

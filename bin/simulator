@@ -44,6 +44,16 @@ class Gauss
 
     @osc_x = ->(t) { 0.5 + 0.2 * Math.cos(t * f * 2 * Math::PI) }
     @osc_y = ->(t) { 0.5 + 0.2 * Math.sin(t * f * 2 * Math::PI) }
+    
+    @active_notes = {}
+  end
+  
+  def handle_midi_event(event)
+    if event.on?
+      @active_notes[event.note] = rand (0...@layer.num_states)
+    else
+      @active_notes.delete event.note
+    end
   end
 
   def next_state(t)
@@ -59,17 +69,43 @@ class Gauss
 end
 
 gauss = Gauss.new viz.foreground, 0.2, 0.1
-
 lfo_f = LFO.new viz.foreground, 0.1, 0.1, 0.9
-
 viz.background.intensity = 0.8
 
-viz.run do |t, _, foreground|
+router = MIDI::Router.new
+router.subscribe gauss, MIDI::Event::Note
+
+midi_process =
+  Thread.new do
+    loop do
+      # wait a random time t
+      t = rand * 5
+      sleep t
+      note = (rand * 10).round
+
+      router.push({
+        data: [0x90, note, 60],
+        timestamp: Time.now.to_f
+      })
+
+      t = rand * 2
+      sleep t
+
+      router.push({
+        data: [0x80, note, 0],
+        timestamp: Time.now.to_f
+      })
+    end
+  end
+
+viz.run do |t, _|
   foreground_intensity = gauss.next_state(t)
   foreground_palette = lfo_f.next_state(t)
-
+  
+  router.run
+  
   viz.num_states.times do |i|
-    foreground[i].i = foreground_intensity[i]
-    foreground[i].p = foreground_palette[i]
+    viz.foreground[i].i = foreground_intensity[i]
+    viz.foreground[i].p = foreground_palette[i]
   end
 end

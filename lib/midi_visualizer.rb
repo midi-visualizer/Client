@@ -13,6 +13,8 @@ require 'midi_visualizer/midi/event'
 require 'midi_visualizer/midi/event/note'
 require 'midi_visualizer/midi/router'
 
+require 'midi_visualizer/effect/adsr'
+
 require 'midi_visualizer/visualizer/background'
 require 'midi_visualizer/visualizer'
 

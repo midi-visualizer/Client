@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'forwardable'
+
 module MIDIVisualizer
   module Layer
     # Layer
@@ -8,17 +10,25 @@ module MIDIVisualizer
     # chain. It holds the state of each pixel in the layer as well as the
     # palette that should be used to render said state.
     class Layer
+      extend Forwardable
+
       attr_accessor :intensity
       attr_reader :states
+      
+      def_delegators :@context, :rows, :columns, :width, :height
 
-      def initialize(rows:, columns: 1, width: 1.0, height: 1.0, palette:)
-        @rows = rows
-        @cols = columns
+      def initialize(context, palette:)
+        @context = context
+        
         @row_factor = height / rows
         @col_factor = width / columns
-        @states  = Array.new(rows * columns) { State.new }
+        @states  = Array.new(num_states) { State.new }
         @palette = palette
         @intensity = 1.0
+      end
+      
+      def num_states
+        rows * columns
       end
 
       def [](index)
@@ -67,21 +77,17 @@ module MIDIVisualizer
       #
       # Warning: no validity check is performed
       def distance(a, b)
-        dx = (a / @rows - b / @rows) * @col_factor
-        dy = (a % @rows - b % @rows) * @row_factor
+        dx = (a / rows - b / rows) * @col_factor
+        dy = (a % rows - b % rows) * @row_factor
 
         Math.sqrt(dx**2 + dy**2)
       end
 
       def position(state)
         [
-          (state / @rows) * @col_factor,
-          (state % @rows) * @row_factor
+          (state / rows) * @col_factor,
+          (state % rows) * @row_factor
         ]
-      end
-
-      def num_states
-        @rows * @cols
       end
     end
   end

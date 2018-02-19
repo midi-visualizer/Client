@@ -20,7 +20,7 @@ viz.foreground.each { |state| state.p = 1.0 }
 class LFO
   def initialize(layer, f = 1.0, amplitude = 0.5, bias = 0.5)
     @func =
-      lambda(t, phase) do
+      lambda do |t, phase|
         amplitude * Math.cos(t * 2 * Math::PI * f + phase) + bias
       end
     @phases = Array.new(layer.num_states) { rand * 2 * Math::PI * 1.0 }

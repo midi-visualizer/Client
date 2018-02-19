@@ -8,13 +8,15 @@ module MIDIVisualizer
     # palette but all of equal size. The layers can then be accessed and
     # modified independently, but the context takes care of combining them into
     # a single image.
-    class Ctx
+    class Ctx < Grid
       attr_accessor :intensity
 
       def initialize(num_layers, rows:, columns:, palettes:)
+        super(rows, columns)
+        
         @layers =
           Array.new(num_layers) do |i|
-            Layer.new rows: rows, columns: columns, palette: palettes[i]
+            Layer.new self, palette: palettes[i]
           end
         @layers.freeze
       end

@@ -4,14 +4,21 @@ module MIDIVisualizer
   class Visualizer
     attr_reader :background
 
-    def initialize(interface, palette_bg, palette_fg = palette_bg)
+    DEFAULT_PARAMS = {
+      background: {}
+    }.freeze
+
+    def initialize(interface, palette_bg, palette_fg = palette_bg, params: {})
+      @params = params.merge!(DEFAULT_PARAMS) { |_, v, _| v }
       @layers = Layer::Ctx.new 2, rows: interface.rows,
                                   columns: interface.columns,
                                   palettes: [palette_bg, palette_fg]
+
       @buffer =
         Array.new(interface.rows * interface.columns) do
           Color::RGB.new rand, rand, rand, 1.0
         end
+
       @interface  = interface
       @background = Background.new @layers[0]
     end
@@ -28,9 +35,9 @@ module MIDIVisualizer
       @interface.open do
         t = Time.now.to_f
 
-        yield t, background, foreground
+        yield t, @params
 
-        background.update!(t)
+        background.update!(t, params: @params[:background])
 
         @layers.render(@buffer)
         @buffer

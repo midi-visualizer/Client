@@ -24,8 +24,7 @@ module MIDIVisualizer
         spread:    1.0
       }.freeze
 
-      def initialize(layer, params = {})
-        @params = params.merge!(DEFAULT_PARAMS) { |_, v, _| v }
+      def initialize(layer)
         @layer  = layer
         @phase  = random_phase
 
@@ -33,22 +32,25 @@ module MIDIVisualizer
         each { |state| state.i = 1.0 }
       end
 
-      def update!(t)
+      def update!(t, params:)
         layer_height_coeff = 1.0 / height
+
+        # Merge in place for performace
+        params.merge!(DEFAULT_PARAMS) { |_, v, _| v }
 
         each.with_index do |state, i|
           y_norm  = @layer.position(i)[1] * layer_height_coeff
-          palette = @params[:mean] + (y_norm - 0.5) * @params[:spread]
-          phase   = @params[:noise] * @phase[i]
+          palette = params[:mean] + (y_norm - 0.5) * params[:spread]
+          phase   = params[:noise] * @phase[i]
 
-          state.p = palette + osc(t, phase)
+          state.p = palette + osc(t, phase, params)
         end
       end
 
       private
 
-      def osc(t, phase)
-        @params[:amplitude] * Math.cos(t * 2 * Math::PI * @params[:f] + phase)
+      def osc(t, phase, params)
+        params[:amplitude] * Math.cos(t * 2 * Math::PI * params[:f] + phase)
       end
 
       def random_phase

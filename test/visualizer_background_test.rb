@@ -12,18 +12,9 @@ describe MIDIVisualizer::Visualizer::Background do
   end
 
   let(:params) { {} }
-  let(:background) { subject.new(ctx[0], params) }
+  let(:background) { subject.new(ctx[0]) }
 
   describe '.new' do
-    it 'inserts its defaults into the params hash' do
-      background
-      assert_equal(subject::DEFAULT_PARAMS, params)
-    end
-
-    it 'does not overwrite params' do
-      params[:amplitude] = subject::DEFAULT_PARAMS[:amplitude] + 0.1
-      subject.new(ctx[0], params)
-      refute_equal(subject::DEFAULT_PARAMS[:amplitude], params[:amplitude])
-    end
+    
   end
 end

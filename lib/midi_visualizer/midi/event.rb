@@ -40,7 +40,7 @@ module MIDIVisualizer
           event_data[:data].freeze
           event_data[:timestamp].freeze
 
-          select_class(event_data[:data]).new(event_data)
+          select_class(event_data[:data]).new(event_data).freeze
         end
       end
     end

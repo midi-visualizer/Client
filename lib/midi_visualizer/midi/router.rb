@@ -14,22 +14,22 @@ module MIDIVisualizer
         @event_queue = Queue.new
         @listeners   = Hash.new { |h, k| h[k] = [] }
       end
-  
+
       # Expects data on the form { :data => [144, 60, 100], :timestamp => 1024 }
       def push(data)
-        event = Event.create_from_data(data)
-        @event_queue.push event
+        Event.match(data).tap { |event| @event_queue.push event }
       end
-      
-      def subscribe(listener, event)
-        @listeners[event] << listener
+
+      def subscribe(listener, event_class)
+        @listeners[event_class] << listener
+        nil # Do not leak the listeners
       end
-      
+
       def run
         until @event_queue.empty?
           event = @event_queue.shift
-          
-          @listeners[event].each do |listener|
+
+          @listeners[event.class].each do |listener|
             listener.handle_midi_event event
           end
         end

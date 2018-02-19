@@ -3,9 +3,8 @@
 require 'bundler/setup'
 require 'unimidi'
 
-input = UniMIDI::Input.all[1]
-input.open do |input|
-  $stdout.puts "send some MIDI to your input now..."
+UniMIDI::Input.all[1].open do |input|
+  $stdout.puts 'send some MIDI to your input now...'
 
   loop do
     m = input.gets

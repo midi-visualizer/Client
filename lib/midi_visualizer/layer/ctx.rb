@@ -1,6 +1,3 @@
-require 'midi_visualizer/layer/layer'
-require 'midi_visualizer/layer/palette'
-
 module MIDIVisualizer
   module Layer
     class Ctx

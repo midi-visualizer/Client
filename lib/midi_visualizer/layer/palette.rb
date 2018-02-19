@@ -1,5 +1,3 @@
-require 'color'
-
 module MIDIVisualizer
   module Layer
     class Palette

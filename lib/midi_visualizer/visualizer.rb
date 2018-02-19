@@ -1,10 +1,3 @@
-require 'color'
-
-require 'midi_visualizer/layer/ctx'
-require 'midi_visualizer/layer/palette'
-
-require 'midi_visualizer/visualizer/background'
-
 module MIDIVisualizer
   class Visualizer
     attr_reader :background

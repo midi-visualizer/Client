@@ -1,5 +1,3 @@
-require 'midi_visualizer/layer/state'
-
 module MIDIVisualizer
   module Layer
     class Layer

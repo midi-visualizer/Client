@@ -1,5 +1,14 @@
 module MIDIVisualizer
   module Effect
+    # Attack-Decay-Sustain-Release
+    # ^
+    # |  /\__________
+    # | /            \
+    # +--------------------> t
+    #
+    # This effect implements the waveform shown above using a FSM.
+    #
+    # TODO: Investigate the effects of chainging the params during operation.
     class ADSR
       DEFAULT_PARAMS = {
         attack_slope: 1.0,
@@ -13,7 +22,7 @@ module MIDIVisualizer
         @start_value = current_value
         @state       = :attack
       end
-      
+
       def release!(t, params: {})
         @start_value = value(t, params: params)
         @start_t     = t
@@ -22,7 +31,7 @@ module MIDIVisualizer
 
       def value(t, params: {})
         params.merge!(DEFAULT_PARAMS) { |_, v, _| v }
-        
+
         loop do
           next_state =
             case @state
@@ -30,38 +39,49 @@ module MIDIVisualizer
             when :decay   then decay_state   t, params
             when :sustain then sustain_state t, params
             when :release then release_state t, params
-            else break 0.0
+            else 0.0
             end
-          break next_state unless Symbol === next_state
+          break next_state unless next_state.is_a? Symbol
           @state = next_state
         end
       end
-      
+
       private
-      
+
+      # Returns either a symbol if the effect should transition to another state
+      # or a numeric value.
       def attack_state(t, params)
-        dt = t - @start_t
-        return :decay if dt > (1.0 - @start_value) / params[:attack_slope]
-        
-        @start_value + dt * params[:attack_slope]
+        slope = params[:release_slope]
+        dt    = t - @start_t
+        return :decay if dt > (1.0 - @start_value) / slope
+
+        @start_value + dt * slope
       end
-      
+
+      # Returns either a symbol if the effect should transition to another state
+      # or a numeric value.
       def decay_state(t, params)
-        dt = t - @start_t - (1.0 - @start_value) / params[:attack_slope]
-        return :sustain if dt > (1.0 - params[:decay_value]) / params[:decay_slope]
-        
-        1.0 - dt * params[:decay_slope]
+        slope = params[:attack_slope]
+        dt    = t - @start_t - (1.0 - @start_value) / slope
+
+        return :sustain if dt > (1.0 - params[:decay_value]) / slope
+
+        1.0 - dt * slope
       end
-      
+
+      # Returns a constant value.
       def sustain_state(_, params)
         params[:decay_value]
       end
-      
+
+      # Returns either a symbol if the effect should transition to another state
+      # or a numeric value.
       def release_state(t, params)
-        dt = t - @start_t
-        return :done if dt > @start_value / params[:release_slope]
-        
-        @start_value - dt * params[:release_slope]
+        slope = params[:release_slope]
+        dt    = t - @start_t
+        return :done if dt > @start_value / slope
+
+        @start_value - dt * slope
       end
     end
   end

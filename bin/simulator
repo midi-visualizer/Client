@@ -96,11 +96,10 @@ class Gauss
 end
 
 gauss = Gauss.new viz.foreground, 0.2, 0.1
+viz.router.subscribe gauss, MIDI::Event::Note
+
 lfo_f = LFO.new viz.foreground, 0.1, 0.1, 0.9
 viz.background.intensity = 0.2
-
-router = MIDI::Router.new
-router.subscribe gauss, MIDI::Event::Note
 
 midi_thread =
   Thread.new do
@@ -115,7 +114,7 @@ midi_thread =
         note = active_notes[rand (0...active_notes.length)]
         active_notes.delete note
         
-        router.push({
+        viz.router.push({
           data: [0x80, note, 0],
           timestamp: Time.now.to_f
         })
@@ -125,7 +124,7 @@ midi_thread =
         
         active_notes << note
         
-        router.push({
+        viz.router.push({
           data: [0x90, note, 60],
           timestamp: Time.now.to_f
         })
@@ -136,9 +135,7 @@ midi_thread =
 viz.run do |t, _|
   foreground_intensity = gauss.next_state(t)
   foreground_palette = lfo_f.next_state(t)
-  
-  router.run
-  
+    
   viz.num_states.times do |i|
     viz.foreground[i].i = foreground_intensity[i]
     viz.foreground[i].p = foreground_palette[i]

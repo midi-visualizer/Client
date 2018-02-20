@@ -11,6 +11,7 @@ require 'midi_visualizer/layer/ctx'
 
 require 'midi_visualizer/midi/event'
 require 'midi_visualizer/midi/event/note'
+require 'midi_visualizer/midi/event/pitch_bend_change'
 require 'midi_visualizer/midi/router'
 
 require 'midi_visualizer/effect/adsr'

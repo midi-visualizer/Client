@@ -20,7 +20,13 @@ module MIDIVisualizer
         Event.match(data).tap { |event| @event_queue.push event }
       end
 
-      def subscribe(listener, event_class)
+      def subscribe(listener, event_class = nil)
+        if event_class
+          raise ArgumentError unless event_class <= Event
+        else
+          event_class = :all
+        end
+
         @listeners[event_class] << listener
         nil # Do not leak the listeners
       end
@@ -29,7 +35,7 @@ module MIDIVisualizer
         until @event_queue.empty?
           event = @event_queue.shift
 
-          @listeners[event.class].each do |listener|
+          (@listeners[event.class] + @listeners[:all]).each do |listener|
             listener.handle_midi_event event
           end
         end

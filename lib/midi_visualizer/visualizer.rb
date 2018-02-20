@@ -2,7 +2,7 @@
 
 module MIDIVisualizer
   class Visualizer
-    attr_reader :background
+    attr_reader :background, :router
 
     DEFAULT_PARAMS = {
       background: {}
@@ -19,6 +19,8 @@ module MIDIVisualizer
           Color::RGB.new rand, rand, rand, 1.0
         end
 
+      @router = MIDI::Router.new
+
       @interface  = interface
       @background = Background.new @layers[0]
     end
@@ -34,6 +36,8 @@ module MIDIVisualizer
     def run
       @interface.open do
         t = Time.now.to_f
+
+        @router.run
 
         yield t, @params
 

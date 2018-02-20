@@ -46,55 +46,90 @@ class Gauss
     @osc_y = ->(t) { 0.5 + 0.2 * Math.sin(t * f * 2 * Math::PI) }
     
     @active_notes = {}
+    @adsr_effects = {}
   end
   
   def handle_midi_event(event)
     if event.on?
       @active_notes[event.note] = rand (0...@layer.num_states)
+      puts "Note on: #{event.note} -> #{@active_notes[event.note]}"
+      current_value =
+        if @adsr_effects[@active_notes[event.note]]
+          struct = @adsr_effects[@active_notes[event.note]]
+          struct[:effect].value(event.timestamp, params: struct[:params])
+        else
+          0.0
+        end
+      
+      @adsr_effects[@active_notes[event.note]] = {
+        effect: Effect::ADSR.new(event.timestamp, current_value),
+        params: Effect::ADSR::DEFAULT_PARAMS.merge({ attack_value: rand(0.5..1.0) })
+      }
+        
     else
-      @active_notes.delete event.note
+      puts "Note off #{event.note} -> #{@active_notes[event.note]}"
+      struct = @adsr_effects[@active_notes[event.note]]
+      if struct
+        struct[:effect].release!(event.timestamp, params: struct[:params])
+        @active_notes.delete event.note
+      else
+        # TODO: Why does this sometimes happen?
+        puts "Failed to remove #{event.note} from #{@active_notes[event.note]}"
+      end
     end
   end
 
   def next_state(t)
+    @adsr_effects.reject! { |_, struct| struct[:effect].done? }
+    
     Array.new(@layer.num_states) do |i|
-      x, y = @layer.position i
-
-      dx = @osc_x.call(t) - x
-      dy = @osc_y.call(t) - y
-
-      Math.exp(-0.5 * ((dx**2 + dy**2) / 0.05))
+      x_i, y_i = @layer.position i
+      # Sum the contributions from all active gaussians
+      @adsr_effects.reduce(0.0) do |a, (k, struct)|
+        x_k, y_k = @layer.position k
+        dx = x_i - x_k
+        dy = y_i - y_k
+        a + struct[:effect].value(t, params: struct[:params]) * Math.exp(-0.5 * ((dx**2 + dy**2) / 0.01))
+      end
     end
   end
 end
 
 gauss = Gauss.new viz.foreground, 0.2, 0.1
 lfo_f = LFO.new viz.foreground, 0.1, 0.1, 0.9
-viz.background.intensity = 0.8
+viz.background.intensity = 0.2
 
 router = MIDI::Router.new
 router.subscribe gauss, MIDI::Event::Note
 
-midi_process =
+midi_thread =
   Thread.new do
+    active_notes = []
     loop do
       # wait a random time t
-      t = rand * 5
+      t = rand * 1
       sleep t
-      note = (rand * 10).round
-
-      router.push({
-        data: [0x90, note, 60],
-        timestamp: Time.now.to_f
-      })
-
-      t = rand * 2
-      sleep t
-
-      router.push({
-        data: [0x80, note, 0],
-        timestamp: Time.now.to_f
-      })
+      
+      if rand > 0.9**active_notes.length
+        # Delete a note
+        note = active_notes[rand (0...active_notes.length)]
+        active_notes.delete note
+        
+        router.push({
+          data: [0x80, note, 0],
+          timestamp: Time.now.to_f
+        })
+      else
+        note = rand (1..(60 - active_notes.length))
+        note = (note + 1) % 61 while active_notes.include? note
+        
+        active_notes << note
+        
+        router.push({
+          data: [0x90, note, 60],
+          timestamp: Time.now.to_f
+        })
+      end
     end
   end
 
@@ -109,3 +144,5 @@ viz.run do |t, _|
     viz.foreground[i].p = foreground_palette[i]
   end
 end
+
+midi_thread.kill

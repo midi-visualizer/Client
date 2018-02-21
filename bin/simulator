@@ -62,10 +62,10 @@ class Gauss
         end
       
       @adsr_effects[@active_notes[event.note]] = {
-        effect: Effect::ADSR.new(event.timestamp, current_value),
-        params: Effect::ADSR::DEFAULT_PARAMS.merge({ attack_value: rand(0.5..1.0) })
+        effect: Waveform::ADSR.new(event.timestamp, current_value),
+        params: Waveform::ADSR::DEFAULT_PARAMS.merge({ attack_value: rand(0.5..1.0) })
       }
-        
+      
     else
       puts "Note off #{event.note} -> #{@active_notes[event.note]}"
       struct = @adsr_effects[@active_notes[event.note]]

@@ -1,5 +1,5 @@
 module MIDIVisualizer
-  module Effect
+  module Waveform
     # Attack-Decay-Sustain-Release
     # ^
     # |  /\__________

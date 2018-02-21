@@ -14,7 +14,7 @@ require 'midi_visualizer/midi/event/note'
 require 'midi_visualizer/midi/event/pitch_bend_change'
 require 'midi_visualizer/midi/router'
 
-require 'midi_visualizer/effect/adsr'
+require 'midi_visualizer/waveform/adsr'
 
 require 'midi_visualizer/visualizer/background'
 require 'midi_visualizer/visualizer'

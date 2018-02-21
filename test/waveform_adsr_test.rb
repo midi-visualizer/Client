@@ -1,7 +1,7 @@
 require 'test_helper'
 
-describe MIDIVisualizer::Effect::ADSR do
-  subject { MIDIVisualizer::Effect::ADSR }
+describe MIDIVisualizer::Waveform::ADSR do
+  subject { MIDIVisualizer::Waveform::ADSR }
 
   let(:initial_value) { 0 }
   let(:adsr) { subject.new 0.0, 0.0 }

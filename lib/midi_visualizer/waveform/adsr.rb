@@ -19,32 +19,36 @@ module MIDIVisualizer
       }.freeze
 
       def initialize(t, current_value = 0.0)
-        @start_t     = t
-        @start_value = current_value
+        @last_update_t     = t
+        @last_update_value = current_value
         @state       = :attack
       end
 
       def release!(t, params: {})
-        @start_value = value(t, params: params)
-        @start_t     = t
-        @state       = :release
+        @last_update_value = value(t, params: params)
+        @last_update_t     = t
+        @state             = :release
       end
 
       def value(t, params: {})
         params.merge!(DEFAULT_PARAMS) { |_, v, _| v }
 
-        loop do
-          next_state =
-            case @state
-            when :attack  then attack_state  t, params
-            when :decay   then decay_state   t, params
-            when :sustain then sustain_state t, params
-            when :release then release_state t, params
-            else 0.0
-            end
-          break next_state unless next_state.is_a? Symbol
-          @state = next_state
-        end
+        current_value =
+          loop do
+            next_state =
+              case @state
+              when :attack  then attack_state  t, params
+              when :decay   then decay_state   t, params
+              when :sustain then sustain_state t, params
+              when :release then release_state t, params
+              else 0.0
+              end
+            break next_state unless next_state.is_a? Symbol
+            @state = next_state
+          end
+
+        @last_update_t     = t
+        @last_update_value = current_value
       end
 
       def done?
@@ -56,24 +60,22 @@ module MIDIVisualizer
       # Returns either a symbol if the effect should transition to another state
       # or a numeric value.
       def attack_state(t, params)
-        slope = params[:release_slope]
-        dt    = t - @start_t
-        return :decay if dt > (params[:attack_value] - @start_value) / slope
+        dt         = t - @last_update_t
+        dv         = params[:attack_slope] * dt
+        next_value = @last_update_value + dv
 
-        @start_value + dt * slope
+        next_value > params[:attack_value] ? :decay : next_value
       end
 
       # Returns either a symbol if the effect should transition to another state
       # or a numeric value.
       def decay_state(t, params)
-        slope = params[:attack_slope]
-        top   = params[:attack_value]
-        decay = top * params[:decay_value]
-        dt    = t - @start_t - (top - @start_value) / slope
-
-        return :sustain if dt > (top - decay) / slope
-
-        top - dt * slope
+        decay_min  = params[:attack_value] * params[:decay_value]
+        dt         = t - @last_update_t
+        dv         = -params[:decay_slope] * dt
+        next_value = @last_update_value + dv
+        
+        next_value < decay_min ? :sustain : next_value
       end
 
       # Returns a constant value.
@@ -84,11 +86,11 @@ module MIDIVisualizer
       # Returns either a symbol if the effect should transition to another state
       # or a numeric value.
       def release_state(t, params)
-        slope = params[:release_slope]
-        dt    = t - @start_t
-        return :done if dt > @start_value / slope
+        dt         = t - @last_update_t
+        dv         = -params[:release_slope] * dt
+        next_value = @last_update_value + dv
 
-        @start_value - dt * slope
+        next_value <= 0 ? :done : next_value
       end
     end
   end

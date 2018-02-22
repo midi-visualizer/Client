@@ -35,14 +35,7 @@ module MIDIVisualizer
 
         current_value =
           loop do
-            next_state =
-              case @state
-              when :attack  then attack_state  t, params
-              when :decay   then decay_state   t, params
-              when :sustain then sustain_state t, params
-              when :release then release_state t, params
-              else 0.0
-              end
+            next_state = send "#{@state}_state", t, params
             break next_state unless next_state.is_a? Symbol
             @state = next_state
           end
@@ -91,6 +84,10 @@ module MIDIVisualizer
         next_value = @last_update_value + dv
 
         next_value <= 0 ? :done : next_value
+      end
+
+      def done_state(_, _)
+        0.0
       end
     end
   end
